@@ -1,6 +1,6 @@
 const cryptoJs = require("crypto-js");
-const passport = require("passport");
-const jwt = require("jsonwebtoken");
+// const passport = require("passport");
+// const jwt = require("jsonwebtoken");
 const Store = require("../../models/store/Store");
 const Customer = require("../../models/customer/Customer");
 const Vendor = require("../../models/vendor/Vendor");
@@ -8,33 +8,34 @@ const Vendor = require("../../models/vendor/Vendor");
 // CUSTOMER SIGNUP TO VENDOR STORE
 const signup = async (req, res) => {
   const storename = req.vhost[0];
-  const { username, email } = req.body;
-  const store = await Store.findOne({ store_name: storename });
-  if (store.name === storename) {
+  const store = await Store.findOne({ name: storename });
+  if (store) {
     try {
       const vendor = await Vendor.findOne({ store_id: store.id });
       if (vendor) {
-        const customer = await Customer.findOne({ email });
-        if (vendor.customers.includes(customer.id)) {
+        if (vendor.customers.includes(req.body.email)) {
           return res.status(403).json({
-            message: "sorry email already register to this store!",
+            message: "sorry this email address already in use!",
             error: 403,
           });
         } else {
           const newCustomer = new Customer({
-            username,
-            email,
+            username: req.body.username,
+            email: req.body.email,
             password: cryptoJs.AES.encrypt(
               req.body.password,
               process.env.CRYPTO_SECRET_KEY
             ).toString(),
           });
           const savedCustomer = await newCustomer.save();
-          if (!vendor.customers.includes(savedCustomer.id)) {
-            await vendor.updateOne({ $push: { customers: savedCustomer.id } });
+          if (!vendor.customers.includes(savedCustomer.email)) {
+            await vendor.updateOne({
+              $push: { customers: savedCustomer.email },
+            });
+            const { password, ...data } = savedCustomer._doc;
             res.status(200).json({
               message: "registration successfully made...",
-              savedCustomer,
+              data,
             });
           }
         }
@@ -46,9 +47,9 @@ const signup = async (req, res) => {
       });
     }
   } else {
-    return res.status(400).json({
+    return res.status(404).json({
       message: "page not found!",
-      error: 400,
+      error: 404,
     });
   }
 };
@@ -56,8 +57,8 @@ const signup = async (req, res) => {
 // CUSTOMER SIGNIN TO VENDOR PAGE
 const signin = async (req, res) => {
   const storename = req.vhost[0];
-  const store = await Store.findOne({ store_name: storename });
-  if (store.name === storename) {
+  const store = await Store.findOne({ name: storename });
+  if (storename === store.name) {
     try {
       const customer = await Customer.findOne({ email: req.body.email });
       if (customer) {

@@ -5,6 +5,7 @@ const vhost = require("vhost");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const helmet = require("helmet");
+// const morgan = require("morgan");
 const methodOverride = require("method-override");
 const passport = require("passport");
 const expressLayouts = require("express-ejs-layouts");
@@ -14,12 +15,13 @@ const {
   passportLocalVendorAuthInit,
 } = require("./config/passport-config");
 const dbConnection = require("./config/dbConnection");
-const corsOptions = require("./config/corsOptions");
+// const corsOptions = require("./config/corsOptions");
+
 // routes
 const vendorRoute = require("./routes/vendor");
 const customerRoute = require("./routes/customer");
 const SubdomainRouteHandler = require("./routes/SubdomainRouteHandler");
-const Host = process.env.HOST;
+
 // init app
 const app = express();
 
@@ -29,13 +31,14 @@ require("dotenv").config();
 dbConnection(mongoose);
 
 // passport local init
+
 // passportLocalCustomerAuthInit(passport);
 passportLocalVendorAuthInit(passport);
 
 // passportLocalAuth(passport)
 
 // cors
-app.use(cors(corsOptions));
+app.use(cors("*"));
 
 // express-session
 app.use(
@@ -53,6 +56,9 @@ app.use(passport.session());
 // helmet middlewares
 app.use(helmet());
 
+// morgan  middleware
+// app.use(morgan("dev"));
+
 // ejs middleware
 app.use(expressLayouts);
 app.set("layout", "./layouts/client");
@@ -65,11 +71,27 @@ app.use(express.json());
 app.use(methodOverride("_method"));
 
 // vhost middleware for custom subdomain creation for vendors
-app.use(vhost("*.localhost", SubdomainRouteHandler));
+app.use(vhost(`*.${process.env.DOMAIN_PORT}`, SubdomainRouteHandler));
 
 // routes middlewares
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to wemart!",
+  });
+});
+
 app.use("/api/vendors", vendorRoute);
 app.use("/api/customers", customerRoute);
+
+// error handler middleware
+// app.use((error, req, res, next) => {
+//   res.status(error.status || 500);
+//   res.json({
+//     error: {
+//       message: error.message,
+//     },
+//   });
+// });
 
 // server init
 module.exports = app;

@@ -60,6 +60,7 @@ router.delete("/:id", verifyAuth, deleteProduct);
 
 // CHECK VENDOR SUBSCRIPTION PLAN
 // router.get("/verify_subscription", verifyAuth, verify_subscription);
+
 // VENDOR SUBSCRIPTION PLAN
 router.patch("/subscription", verifyAuth, subscription_plan);
 

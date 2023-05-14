@@ -5,15 +5,14 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server",
-    "dev": "nodemon server NODE_ENV=development "
+    "start": "cross-env NODE_ENV=production node server",
+    "dev": "cross-env NODE_ENV=development nodemon server"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.2.2",
-    "bootstrap": "^5.2.3",
     "connect-mongo": "^4.6.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.1.1",
@@ -44,6 +43,7 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "nodemon": "^2.0.20"
   }
 }

@@ -47,6 +47,26 @@ router.get("/signin", (req, res) => {
   });
 });
 
+// GET CUSTOMER CART PAGE
+router.get("/cart", async (req, res) => {
+  const subdomin = req.vhost;
+  const store = await Store.findOne({ name: subdomin[0] });
+  if (store) {
+    const vendor = await Vendor.findOne({ store_id: store.id });
+    res.status(200).render("store-front/cart", {
+      layout: "./layouts/store",
+      title: "cart",
+      store,
+      vendor,
+    });
+  } else {
+    res.status(404).render("store-front/404page", {
+      layout: "./layouts/store",
+      title: "page not found!",
+    });
+  }
+});
+
 // GET VENDOR PRODUCT DETAILS
 router.get("/product-details", async (req, res) => {
   try {
@@ -81,12 +101,33 @@ router.get("/product-details", async (req, res) => {
   }
 });
 
+// GET PRODUCTS PAGE
+router.get("/products", async (req, res) => {
+  const subdomin = req.vhost;
+  const store = await Store.findOne({ name: subdomin[0] });
+  if (store) {
+    const vendor = await Vendor.findOne({ store_id: store.id });
+    const products = await Product.find({ vendorId: store.vendorId });
+    res.status(200).render("store-front/shop", {
+      layout: "./layouts/store",
+      title: `${store.name}`,
+      store,
+      products,
+      subdomin,
+      vendor,
+    });
+  } else {
+    res.status(404).render("store-front/404page", {
+      layout: "./layouts/store",
+      title: "page not found!",
+    });
+  }
+});
 
 // REGISTER CUSTOMER TO VENDOR STORE
-router.put("/signup", signup);
+router.post("/signup", signup);
 
 // LOGIN CUSTOMER TO VENDOR STORE
 router.post("/signin", signin);
-
 
 module.exports = router;

@@ -3,18 +3,26 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const uuid = require("uuid").v4();
 const Vendor = require("../../models/vendor/Vendor");
-const logger = require("../../middlewares/logger");
+const logger = require("../../logger/index");
 require("dotenv").config();
+
+const log = logger.child({
+  id: uuid,
+});
 
 const signup = async (req, res) => {
   const { firstname, lastname, email, phone } = req.body;
   try {
     const checkVendor = await Vendor.findOne({ email });
     if (checkVendor) {
-      // res.status(403).json({
-      //   message: "Oops sorry this email already in use...",
-      // });
-      logger.warn("Oops sorry this email already in use...");
+      log.warn("Email address provided is already in use", {
+        method: req.method,
+        route: req.path,
+        user_ip: req.socket.remoteAddress,
+      });
+      res.status(403).json({
+        message: "Oops sorry this email already in use",
+      });
     } else {
       const referralId = Math.random().toString(36).slice(2);
       const newVendor = new Vendor({
@@ -29,6 +37,12 @@ const signup = async (req, res) => {
         ).toString(),
       });
       const created_vendor = await newVendor.save();
+      log.info("Vendor account successfully created", {
+        vendorId: created_vendor.id,
+        method: req.method,
+        route: req.path,
+        user_ip: req.socket.remoteAddress,
+      });
       return res.status(200).json({
         message: "success",
         request: {
@@ -40,9 +54,12 @@ const signup = async (req, res) => {
       });
     }
   } catch (err) {
+    log.error(err.message, {
+      route: req.path,
+      method: req.method,
+    });
     return res.status(500).json({
       message: "Server error: something went wrong, please try again later",
-      error: err.message,
     });
   }
 };
@@ -79,25 +96,46 @@ const signin = async (req, res) => {
 
         refreshTokens.push(refreshToken);
 
-        res.status(200).json({
-          message: "Signin successfully!",
+        log.info("Vendor signin authentication successful.", {
+          vendorId: vendor.id,
+          method: req.method,
+          route: req.path,
+          user_ip: req.socket.remoteAddress,
+        });
+        return res.status(200).json({
+          message: "Signin successful!",
           accessToken,
           refreshToken,
         });
       } else {
-        // return res.status(403).json({
-        //   message: "Incorrect password!",
-        // });
-        logger.warn("Incorrect password!", {
-          userIpAddress: req.ip,
+        log.warn("Incorrect password provided by the vendor", {
+          vendorId: vendor.id,
+          route: req.path,
+          method: req.method,
+          user_ip: req.socket.remoteAddress,
+        });
+
+        return res.status(403).json({
+          message: "Password incorrect",
         });
       }
     } else {
+      log.warn(
+        "Email address provided by the vendor do not match with database",
+        {
+          route: req.path,
+          user_ip: req.socket.remoteAddress,
+        }
+      );
       return res.status(403).json({
         message: "Incorrect email",
       });
     }
   } catch (err) {
+    log.error(err.message, {
+      route: req.path,
+      method: req.method,
+    });
     return res.status(500).json({
       message: "Server error: something went wrong, please try again later",
       error: err.message,

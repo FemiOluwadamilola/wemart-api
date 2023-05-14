@@ -10,6 +10,11 @@ const Vendor = require("../../models/vendor/Vendor");
 const Store = require("../../models/store/Store");
 const Product = require("../../models/vendor/Product");
 const Subscription = require("../../models/vendor/Subscription");
+const logger = require("../../logger/index");
+
+const log = logger.child({
+  id: uuid,
+});
 
 // VENDOR DASHBOARD
 const dashboard = async (req, res) => {
@@ -114,6 +119,7 @@ const create_store = async (req, res) => {
               },
               { new: true }
             );
+
             res.status(200).json({
               message: "Store is successfully created...",
               request: {
