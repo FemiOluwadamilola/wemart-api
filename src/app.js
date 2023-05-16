@@ -76,7 +76,7 @@ app.use(vhost(`*.${process.env.DOMAIN_PORT}`, SubdomainRouteHandler));
 // routes middlewares
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "Welcome to wemart!",
+    message: "Welcome to wemart.ng API server",
   });
 });
 

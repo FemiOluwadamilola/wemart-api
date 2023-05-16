@@ -164,11 +164,11 @@ const uploadProduct = async (req, res) => {
       const product = multer({
         storage,
         fileFilter: (req, file, cb) => {
-          const extname = path.extname(file.originalname);
-          if (extname !== ".jpg" || extname !== ".png") {
+          const ext = path.extname(file.originalname);
+          if (ext !== ".jpg" && ext !== ".png" && ext !== ".jpeg") {
             res
               .status(403)
-              .json({ error_msg: "Only .jpg or .png files allowed..." });
+              .json({ message: "Only .jpg or .png files allowed..." });
           } else {
             cb(null, true);
           }
@@ -235,14 +235,12 @@ const deleteProduct = async (req, res) => {
           fs.unlink(
             path.join(
               __dirname,
-              `../../../vendors-store-files/${store.name}/product-imgs/${product.image}`
+              `../../../public/vendors-store-files/${store.name}/product-imgs/${product.image}`
             ),
             async (err) => {
               if (err) {
                 return res.status(404).json({
-                  message:
-                    "Server error: something went wrong, please try again later",
-                  error: err.message,
+                  message: err.message,
                 });
               } else {
                 await Product.findByIdAndDelete(req.params.id);

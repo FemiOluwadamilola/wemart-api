@@ -1,4 +1,6 @@
-/logs/
+/logs
 **/[Ll]ogs
 /node_modules
 .env
+/public/img
+/public/vendors-store-files

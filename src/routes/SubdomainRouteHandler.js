@@ -67,6 +67,26 @@ router.get("/cart", async (req, res) => {
   }
 });
 
+// GET CUSTOMER FAVOURITE PRODUCTS PAGE
+router.get("/favorite", async (req, res) => {
+  const subdomin = req.vhost;
+  const store = await Store.findOne({ name: subdomin[0] });
+  if (store) {
+    const vendor = await Vendor.findOne({ store_id: store.id });
+    res.status(200).render("store-front/favorite", {
+      layout: "./layouts/store",
+      title: "favorite",
+      store,
+      vendor,
+    });
+  } else {
+    res.status(404).render("store-front/404page", {
+      layout: "./layouts/store",
+      title: "page not found!",
+    });
+  }
+});
+
 // GET VENDOR PRODUCT DETAILS
 router.get("/product-details", async (req, res) => {
   try {
@@ -80,6 +100,7 @@ router.get("/product-details", async (req, res) => {
         res.status(200).render("store-front/product-details", {
           layout: "./layouts/store",
           title: "product-details",
+          vendor,
           product,
           store,
         });
@@ -102,7 +123,7 @@ router.get("/product-details", async (req, res) => {
 });
 
 // GET PRODUCTS PAGE
-router.get("/products", async (req, res) => {
+router.get("/shop", async (req, res) => {
   const subdomin = req.vhost;
   const store = await Store.findOne({ name: subdomin[0] });
   if (store) {
