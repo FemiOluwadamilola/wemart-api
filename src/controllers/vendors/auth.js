@@ -2,8 +2,15 @@ const cryptoJs = require("crypto-js");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const uuid = require("uuid").v4();
-const Vendor = require("../../models/vendor/Vendor");
+const Store = require("../../models/store/Store");
+const Product = require("../../models/vendor/Product");
+const {
+  fetchVendor,
+  createVendor,
+  removeVendor,
+} = require("../../services/vendor/vendor.service");
 const logger = require("../../logger/index");
+const { fetchProducts } = require("../../services/vendor/product.service");
 require("dotenv").config();
 
 const log = logger.child({
@@ -13,19 +20,22 @@ const log = logger.child({
 const signup = async (req, res) => {
   const { firstname, lastname, email, phone } = req.body;
   try {
-    const checkVendor = await Vendor.findOne({ email });
+    const checkVendor = await fetchVendor({ email });
     if (checkVendor) {
-      log.warn("Email address provided is already in use", {
-        method: req.method,
-        route: req.path,
-        user_ip: req.socket.remoteAddress,
-      });
+      log.warn(
+        `Email address provided is already in use by ${checkVendor.name}`,
+        {
+          method: req.method,
+          route: req.path,
+          user_ip: req.socket.remoteAddress,
+        }
+      );
       res.status(403).json({
         message: "Oops sorry this email already in use",
       });
     } else {
       const referralId = Math.random().toString(36).slice(2);
-      const newVendor = new Vendor({
+      const newVendor = createVendor({
         firstname,
         lastname,
         email,
@@ -44,6 +54,7 @@ const signup = async (req, res) => {
         user_ip: req.socket.remoteAddress,
       });
       return res.status(200).json({
+        status: 200,
         message: "success",
         request: {
           method: "PUT",
@@ -83,7 +94,7 @@ const generateRefreshToken = (vendor) => {
 
 const signin = async (req, res) => {
   try {
-    const vendor = await Vendor.findOne({ email: req.body.email });
+    const vendor = await fetchVendor({ email: req.body.email });
     if (vendor) {
       const hashedPassword = cryptoJs.AES.decrypt(
         vendor.password,
@@ -103,6 +114,7 @@ const signin = async (req, res) => {
           user_ip: req.socket.remoteAddress,
         });
         return res.status(200).json({
+          status: 200,
           message: "Signin successful!",
           accessToken,
           refreshToken,
@@ -121,7 +133,7 @@ const signin = async (req, res) => {
       }
     } else {
       log.warn(
-        "Email address provided by the vendor do not match with database",
+        "Email address provided by the vendor does't match with database",
         {
           route: req.path,
           user_ip: req.socket.remoteAddress,
@@ -191,6 +203,19 @@ const logout = (req, res, next) => {
 const forgotPassword = async (req, res) => {
   try {
     // forgot password functionality...
+    const confirmUserByEmail = Vendor.findOne({ email: req.body.email });
+    if (!confirmUserByEmail) {
+      return res.status(403).json({ message: "Invalid email address" });
+    } else {
+      Vendor.findByIdAndUpdate(confirmUserByEmail.id, {
+        $set: {
+          password: cryptoJs.AES.encrypt(
+            req.body.password,
+            process.env.CRYPTO_SECRET_KEY
+          ).toString(),
+        },
+      });
+    }
   } catch (err) {
     return res.status(500).json({
       message: "Server error: something went wrong, please try again later",
@@ -199,6 +224,26 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    removeVendor(req.user.id);
+    await Store.findOneAndDelete({ vendorId: req.user.id });
+    await Product.findOneAndDelete({ vendorId: req.user.id });
+    log.info(`Store account was deleted by ${req.user.firstname}`, {
+      method: req.method,
+      route: req.path,
+      user_ip: req.socket.remoteAddress,
+    });
+    res.status(200).json({
+      message: "Account deleted...",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error: something went wrong, please try again later",
+      error: err.message,
+    });
+  }
+};
 // const login = (req, res, next) => {
 //   passport.authenticate("vendor", {
 //     successRedirect: "/dashboard",
@@ -213,5 +258,6 @@ module.exports = {
   refreshToken,
   logout,
   forgotPassword,
+  deleteAccount,
   // login,
 };

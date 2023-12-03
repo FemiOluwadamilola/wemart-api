@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const Store = require("../models/store/Store");
 const Product = require("../models/vendor/Product");
-const Vendor = require("../models/vendor/Vendor");
+// const Vendor = require("../models/vendor/Vendor");
+const { fetchVendor } = require("../services/vendor/vendor.service");
 const { signin, signup } = require("../controllers/customer/auth");
 
 // GET VENDOR STORE FRONT FROM SUBDOMAIN
@@ -9,8 +10,10 @@ router.get("/", async (req, res) => {
   const subdomin = req.vhost;
   const store = await Store.findOne({ name: subdomin[0] });
   if (store) {
-    const vendor = await Vendor.findOne({ store_id: store.id });
-    const products = await Product.find({ vendorId: store.vendorId });
+    const vendor = fetchVendor({ store_id: store.id });
+    const products = await Product.find({ vendorId: store.vendorId })
+      .limit(8)
+      .sort({ createdAt: -1 });
     res.status(200).render("store-front/home", {
       layout: "./layouts/store",
       title: `${store.name}`,
@@ -52,7 +55,7 @@ router.get("/cart", async (req, res) => {
   const subdomin = req.vhost;
   const store = await Store.findOne({ name: subdomin[0] });
   if (store) {
-    const vendor = await Vendor.findOne({ store_id: store.id });
+    const vendor = fetchVendor({ store_id: store.id });
     res.status(200).render("store-front/cart", {
       layout: "./layouts/store",
       title: "cart",
@@ -72,7 +75,7 @@ router.get("/favorite", async (req, res) => {
   const subdomin = req.vhost;
   const store = await Store.findOne({ name: subdomin[0] });
   if (store) {
-    const vendor = await Vendor.findOne({ store_id: store.id });
+    const vendor = fetchVendor({ store_id: store.id });
     res.status(200).render("store-front/favorite", {
       layout: "./layouts/store",
       title: "favorite",
@@ -94,7 +97,7 @@ router.get("/product-details", async (req, res) => {
     const productId = req.query.productId;
     const store = await Store.findOne({ name: storename });
     if (store) {
-      const vendor = await Vendor.findOne({ store_id: store.id });
+      const vendor = fetchVendor({ store_id: store.id });
       if (vendor) {
         const product = await Product.findById(productId);
         res.status(200).render("store-front/product-details", {
@@ -127,8 +130,10 @@ router.get("/shop", async (req, res) => {
   const subdomin = req.vhost;
   const store = await Store.findOne({ name: subdomin[0] });
   if (store) {
-    const vendor = await Vendor.findOne({ store_id: store.id });
-    const products = await Product.find({ vendorId: store.vendorId });
+    const vendor = fetchVendor({ store_id: store.id });
+    const products = await Product.find({ vendorId: store.vendorId })
+      .limit(9)
+      .sort({ createdAt: -1 });
     res.status(200).render("store-front/shop", {
       layout: "./layouts/store",
       title: `${store.name}`,

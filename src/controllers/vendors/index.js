@@ -6,10 +6,18 @@ const axios = require("axios");
 const uuid = require("uuid").v4();
 // const paystack = require('paystack')(process.env.paystack_secret_key);
 const Flutterwave = require("flutterwave-node-v3");
-const Vendor = require("../../models/vendor/Vendor");
 const Store = require("../../models/store/Store");
 const Product = require("../../models/vendor/Product");
 const Subscription = require("../../models/vendor/Subscription");
+const {
+  addProduct,
+  removeProduct,
+} = require("../../services/vendor/product.service");
+
+const {
+  fetchVendor,
+  vendorById,
+} = require("../../services/vendor/vendor.service");
 const logger = require("../../logger/index");
 
 const log = logger.child({
@@ -19,7 +27,7 @@ const log = logger.child({
 // VENDOR DASHBOARD
 const dashboard = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = vendorById(req.user.id);
     if (vendor) {
       const { password, ...data } = vendor._doc;
       return res.status(200).json(data);
@@ -40,7 +48,7 @@ const dashboard = async (req, res) => {
 // PRODUCT PREVIEW FUNCTION
 const productsPreview = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = vendorById(req.user.id);
     if (vendor) {
       const vendorProducts = await Product.findOne({ vendorId: req.user.id });
       return res.status(200).json(vendorProducts);
@@ -61,7 +69,7 @@ const productsPreview = async (req, res) => {
 // STORE SETUP FOR FUNCTION
 const create_store = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = vendorById(req.user.id);
     if (vendor) {
       const store = await Store.findOne({ name: req.body.name });
       if (store) {
@@ -143,9 +151,9 @@ const create_store = async (req, res) => {
 };
 
 // PRODUCT UPLOAD...
-const uploadProduct = async (req, res) => {
+const uploadVendorProduct = async (req, res) => {
   const vendorId = req.user.id;
-  const vendor = await Vendor.findById(vendorId);
+  const vendor = vendorById(vendorId);
   try {
     if (!vendor) {
       res.status(403).json({ message: "Action forbidden..." });
@@ -188,7 +196,7 @@ const uploadProduct = async (req, res) => {
             available_colors,
             price,
           } = req.body;
-          const newProduct = new Product({
+          const newProduct = addProduct({
             vendorId,
             title,
             desc,
@@ -221,9 +229,9 @@ const uploadProduct = async (req, res) => {
 // PRODUCT DELETE...
 const deleteProduct = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = vendorById(req.user.id);
     if (vendor) {
-      const product = await Product.findById(req.params.id);
+      const product = removeProduct(req.params.id);
       const store = await Store.findOne({ _id: vendor.store_id });
       fs.stat(path.join(), (err) => {
         if (err) {
@@ -298,7 +306,7 @@ const subscription_plan = async (req, res) => {
   const { card_number, cvv, expiry_month, expiry_year, currency, plan } =
     req.body;
   try {
-    const vendor = await Vendor.findById(req.user.id);
+    const vendor = vendorById(req.user.id);
     if (vendor) {
       const subscription = await Subscription.find({
         vendorId: vendor.id,
@@ -381,7 +389,7 @@ const subscription_plan = async (req, res) => {
 const verifyReferralId = async (req, res) => {
   try {
     const refCode = req.query.ref;
-    const vendor = await Vendor.findOne({ referralId: refCode });
+    const vendor = fetchVendor({ referralId: refCode });
     if (vendor) {
       return res.status(200).json(vendor.firstname);
     } else {
@@ -399,7 +407,7 @@ const verifyReferralId = async (req, res) => {
 
 module.exports = {
   create_store,
-  uploadProduct,
+  uploadVendorProduct,
   productsPreview,
   deleteProduct,
   // verify_subscription,

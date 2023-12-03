@@ -10,6 +10,7 @@ const methodOverride = require("method-override");
 const passport = require("passport");
 const expressLayouts = require("express-ejs-layouts");
 const expressSession = require("express-session");
+const rateLimit = require("express-rate-limit");
 const {
   passportLocalCustomerAuthInit,
   passportLocalVendorAuthInit,
@@ -39,6 +40,15 @@ passportLocalVendorAuthInit(passport);
 
 // cors
 app.use(cors("*"));
+
+// API REQUEST LIMITER
+// const limit = rateLimit({
+//   windowMS: 10 * 60 * 1000,
+//   max: 5,
+// });
+
+// app.use(limit);
+// app.set("trust proxy", 1);
 
 // express-session
 app.use(

@@ -24,6 +24,26 @@
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/style.css" rel="stylesheet">
+    <script defer>
+      // SHOPPING CART FUNCTIONALITIES
+addToCartBtn.addEventListener("click", async (e) => {
+  const queryParams = new URLSearchParams(window.location.search);
+  const queryParamsObj = Object.fromEntries(queryParams);
+  let cartItems;
+  if (sessionStorage.getItem("cartItems") === null) {
+    cartItems = [];
+  } else {
+    cartItems = JSON.parse(sessionStorage.getItem("cartItems"));
+  }
+  const cartItemsObj = {
+    productId: queryParamsObj.productId,
+    price: queryParamsObj.price,
+  };
+  cartItems.push(cartItemsObj);
+  sessionStorage.setItem("cartItems", JSON.stringify(cartItems));
+  console.log(`${cartItems.length} items added to cart`);
+});
+    </script>
 </head>
 
 <body>
@@ -46,6 +66,7 @@
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
+    <script src="js/script.js"></script>
 </body>
 
 </html>

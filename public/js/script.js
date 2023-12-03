@@ -4,37 +4,14 @@ const form = document.querySelector("form");
 
 // GET ITEMS IN CART
 cart.addEventListener("click", async (e) => {
-  try {
-    let cartItems;
-    if (sessionStorage.getItem("cartItems") === null) {
-      cartItems = "Cart empty";
-    } else {
-      cartItems = JSON.parse(sessionStorage.getItem("cartItems"));
-    }
-
-    console.log(cartItems);
-  } catch (error) {
-    console.log(error.message);
-  }
-});
-
-// SHOPPING CART FUNCTIONALITIES
-addToCartBtn.addEventListener("click", async (e) => {
-  const queryParams = new URLSearchParams(window.location.search);
-  const queryParamsObj = Object.fromEntries(queryParams);
   let cartItems;
   if (sessionStorage.getItem("cartItems") === null) {
-    cartItems = [];
+    cartItems = "Cart empty";
   } else {
     cartItems = JSON.parse(sessionStorage.getItem("cartItems"));
   }
-  const cartItemsObj = {
-    productId: queryParamsObj.productId,
-    price: queryParamsObj.price,
-  };
-  cartItems.push(cartItemsObj);
-  sessionStorage.setItem("cartItems", JSON.stringify(cartItems));
-  console.log(`${cartItems.length} items added to cart`);
+
+  console.log(cartItems);
 });
 
 // CUSTOMER TO VENDOR STORE LOGIN AND REGISTRATION

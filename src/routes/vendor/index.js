@@ -2,7 +2,7 @@ const router = require("express").Router();
 // const passport = require("passport");
 const {
   create_store,
-  uploadProduct,
+  uploadVendorProduct,
   productsPreview,
   deleteProduct,
   // verify_subscription,
@@ -16,9 +16,11 @@ const {
   refreshToken,
   logout,
   forgotPassword,
+  deleteAccount,
 } = require("../../controllers/vendors/auth");
 
 const verifyAuth = require("../../middlewares/verifyAuth");
+const { rateLimiter } = require("../../middlewares/rateLimiter");
 
 // const {initializePaystackPayment, initializePaystackSubscription} = require("../../services/paystack");
 
@@ -53,10 +55,13 @@ router.get("/", verifyAuth, dashboard);
 router.put("/store", verifyAuth, create_store);
 
 // VENDOR PRODUCT UPLOAD ROUTE
-router.post("/", verifyAuth, uploadProduct);
+router.post("/", verifyAuth, uploadVendorProduct);
 
 // VENDOR PRODUCT ROUTE
 router.delete("/:id", verifyAuth, deleteProduct);
+
+// DELETE VENDOR ACCOUNT AND STORE
+router.get("/del-account", verifyAuth, deleteAccount);
 
 // CHECK VENDOR SUBSCRIPTION PLAN
 // router.get("/verify_subscription", verifyAuth, verify_subscription);
