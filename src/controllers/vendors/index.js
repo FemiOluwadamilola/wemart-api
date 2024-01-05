@@ -6,18 +6,20 @@ const axios = require("axios");
 const uuid = require("uuid").v4();
 // const paystack = require('paystack')(process.env.paystack_secret_key);
 const Flutterwave = require("flutterwave-node-v3");
-const Store = require("../../models/store/Store");
-const Product = require("../../models/vendor/Product");
 const Subscription = require("../../models/vendor/Subscription");
+const { findStore, createStore } = require("../../services/vendor/store");
 const {
   addProduct,
   removeProduct,
-} = require("../../services/vendor/product.service");
+  fetchProduct,
+} = require("../../services/vendor/product");
 
 const {
   fetchVendor,
   vendorById,
-} = require("../../services/vendor/vendor.service");
+  updateVendor,
+  updateVendorById,
+} = require("../../services/vendor/vendor");
 const logger = require("../../logger/index");
 
 const log = logger.child({
@@ -27,13 +29,13 @@ const log = logger.child({
 // VENDOR DASHBOARD
 const dashboard = async (req, res) => {
   try {
-    const vendor = vendorById(req.user.id);
+    const vendor = await vendorById(req.user.id);
     if (vendor) {
       const { password, ...data } = vendor._doc;
       return res.status(200).json(data);
     } else {
       return res.status(403).json({
-        message: "Oops something not right...",
+        message: "Oops something went wrong but we are working on it...",
         error: 403,
       });
     }
@@ -48,13 +50,13 @@ const dashboard = async (req, res) => {
 // PRODUCT PREVIEW FUNCTION
 const productsPreview = async (req, res) => {
   try {
-    const vendor = vendorById(req.user.id);
+    const vendor = await vendorById(req.user.id);
     if (vendor) {
-      const vendorProducts = await Product.findOne({ vendorId: req.user.id });
+      const vendorProducts = await fetchProduct({ vendorId: req.user.id });
       return res.status(200).json(vendorProducts);
     } else {
       return res.status(403).json({
-        message: "Action denieled...",
+        message: "Action rejected...",
         error: 403,
       });
     }
@@ -69,12 +71,12 @@ const productsPreview = async (req, res) => {
 // STORE SETUP FOR FUNCTION
 const create_store = async (req, res) => {
   try {
-    const vendor = vendorById(req.user.id);
+    const vendor = await vendorById(req.user.id);
     if (vendor) {
-      const store = await Store.findOne({ name: req.body.name });
+      const store = await findStore({ name: req.body.name });
       if (store) {
         return res.status(403).json({
-          message: "Oops sorry store name already in use...",
+          message: "Oops sorry store name already taken...",
           error: 403,
         });
       } else {
@@ -109,16 +111,16 @@ const create_store = async (req, res) => {
           if (err) {
             return res.status(500).json({ message: err });
           } else {
-            const newStore = new Store({
+            const newStore = await createStore({
               vendorId: vendor.id,
               name: req.body.name,
-              image: req.file.filename,
+              // image: req.file.filename,
               desc: req.body.desc,
             });
 
             const store = await newStore.save();
 
-            await Vendor.findByIdAndUpdate(
+            await updateVendorById(
               { _id: vendor.id },
               {
                 $set: {
@@ -140,7 +142,9 @@ const create_store = async (req, res) => {
         });
       }
     } else {
-      res.status(403).json({ message: "please signup to create a store..." });
+      res
+        .status(403)
+        .json({ message: "to create a store, account creation most be made." });
     }
   } catch (err) {
     return res.status(500).json({
@@ -153,12 +157,14 @@ const create_store = async (req, res) => {
 // PRODUCT UPLOAD...
 const uploadVendorProduct = async (req, res) => {
   const vendorId = req.user.id;
-  const vendor = vendorById(vendorId);
+  const vendor = await vendorById(vendorId);
   try {
     if (!vendor) {
-      res.status(403).json({ message: "Action forbidden..." });
+      res
+        .status(403)
+        .json({ message: "something went wrong invalid vendor id" });
     } else {
-      const store = await Store.findOne({ _id: vendor.store_id });
+      const store = await findStore({ _id: vendor.store_id });
       const storage = multer.diskStorage({
         destination: `./public/vendors-store-files/${store.name}/product-imgs`,
         filename: (req, file, cb) => {
@@ -190,13 +196,13 @@ const uploadVendorProduct = async (req, res) => {
           const {
             title,
             desc,
-            img,
+            image,
             categories,
             available_sizes,
             available_colors,
             price,
           } = req.body;
-          const newProduct = addProduct({
+          const newProduct = await addProduct({
             vendorId,
             title,
             desc,
@@ -222,17 +228,17 @@ const uploadVendorProduct = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ err_message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
 // PRODUCT DELETE...
 const deleteProduct = async (req, res) => {
   try {
-    const vendor = vendorById(req.user.id);
+    const vendor = await vendorById(req.user.id);
     if (vendor) {
-      const product = removeProduct(req.params.id);
-      const store = await Store.findOne({ _id: vendor.store_id });
+      const product = await removeProduct(req.params.id);
+      const store = await findStore({ _id: vendor.store_id });
       fs.stat(path.join(), (err) => {
         if (err) {
           return res.status(404).json({
@@ -251,10 +257,10 @@ const deleteProduct = async (req, res) => {
                   message: err.message,
                 });
               } else {
-                await Product.findByIdAndDelete(req.params.id);
+                await removeProduct(req.params.id);
                 // REMOVE PRODUCT FROM VENDOR SCHEMA
                 if (vendor.products.includes(req.params.id)) {
-                  await Vendor.updateOne({
+                  await updateVendor({
                     $pull: { products: req.params.id },
                   });
                   return res

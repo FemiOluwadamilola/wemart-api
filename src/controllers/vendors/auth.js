@@ -8,9 +8,9 @@ const {
   fetchVendor,
   createVendor,
   removeVendor,
-} = require("../../services/vendor/vendor.service");
+} = require("../../services/vendor/vendor");
 const logger = require("../../logger/index");
-const { fetchProducts } = require("../../services/vendor/product.service");
+const { fetchProducts } = require("../../services/vendor/product");
 require("dotenv").config();
 
 const log = logger.child({

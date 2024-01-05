@@ -1,19 +1,21 @@
 const router = require("express").Router();
-const Store = require("../models/store/Store");
-const Product = require("../models/vendor/Product");
-// const Vendor = require("../models/vendor/Vendor");
-const { fetchVendor } = require("../services/vendor/vendor.service");
+const { findStore } = require("../services/vendor/store");
+const { fetchVendor } = require("../services/vendor/vendor");
 const { signin, signup } = require("../controllers/customer/auth");
+const {
+  fetchProductById,
+  fetchProducts,
+} = require("../services/vendor/product");
 
 // GET VENDOR STORE FRONT FROM SUBDOMAIN
 router.get("/", async (req, res) => {
   const subdomin = req.vhost;
-  const store = await Store.findOne({ name: subdomin[0] });
+  const store = await findStore({ name: subdomin[0] });
   if (store) {
     const vendor = fetchVendor({ store_id: store.id });
-    const products = await Product.find({ vendorId: store.vendorId })
-      .limit(8)
-      .sort({ createdAt: -1 });
+    const products = await fetchProducts({ vendorId: store.vendorId }, 8, {
+      createdAt: -1,
+    });
     res.status(200).render("store-front/home", {
       layout: "./layouts/store",
       title: `${store.name}`,
@@ -53,7 +55,7 @@ router.get("/signin", (req, res) => {
 // GET CUSTOMER CART PAGE
 router.get("/cart", async (req, res) => {
   const subdomin = req.vhost;
-  const store = await Store.findOne({ name: subdomin[0] });
+  const store = await findStore({ name: subdomin[0] });
   if (store) {
     const vendor = fetchVendor({ store_id: store.id });
     res.status(200).render("store-front/cart", {
@@ -73,7 +75,7 @@ router.get("/cart", async (req, res) => {
 // GET CUSTOMER FAVOURITE PRODUCTS PAGE
 router.get("/favorite", async (req, res) => {
   const subdomin = req.vhost;
-  const store = await Store.findOne({ name: subdomin[0] });
+  const store = await findStore({ name: subdomin[0] });
   if (store) {
     const vendor = fetchVendor({ store_id: store.id });
     res.status(200).render("store-front/favorite", {
@@ -95,11 +97,11 @@ router.get("/product-details", async (req, res) => {
   try {
     const storename = req.vhost[0];
     const productId = req.query.productId;
-    const store = await Store.findOne({ name: storename });
+    const store = await findStore({ name: storename });
     if (store) {
       const vendor = fetchVendor({ store_id: store.id });
       if (vendor) {
-        const product = await Product.findById(productId);
+        const product = await fetchProductById(productId);
         res.status(200).render("store-front/product-details", {
           layout: "./layouts/store",
           title: "product-details",
@@ -128,12 +130,12 @@ router.get("/product-details", async (req, res) => {
 // GET PRODUCTS PAGE
 router.get("/shop", async (req, res) => {
   const subdomin = req.vhost;
-  const store = await Store.findOne({ name: subdomin[0] });
+  const store = await findStore({ name: subdomin[0] });
   if (store) {
-    const vendor = fetchVendor({ store_id: store.id });
-    const products = await Product.find({ vendorId: store.vendorId })
-      .limit(9)
-      .sort({ createdAt: -1 });
+    const vendor = await fetchVendor({ store_id: store.id });
+    const products = await fetchProducts({ vendorId: store.vendorId }, 9, {
+      createdAt: -1,
+    });
     res.status(200).render("store-front/shop", {
       layout: "./layouts/store",
       title: `${store.name}`,

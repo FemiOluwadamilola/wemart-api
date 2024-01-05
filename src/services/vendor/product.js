@@ -1,8 +1,8 @@
 const Product = require("../../models/vendor/Product");
 
-const fetchProducts = async (query) => {
+const fetchProducts = async (query, limit, sort) => {
   try {
-    const products = await Product.find(query);
+    const products = await Product.find(query).limit(limit).sort(sort);
     return products;
   } catch (err) {
     throw Error(err);
@@ -36,9 +36,18 @@ const fetchProduct = async (query) => {
   }
 };
 
+const fetchProductById = async (query) => {
+  try {
+    const product = await Product.findById(query);
+    return product;
+  } catch (err) {
+    throw Error(err);
+  }
+};
 module.exports = {
   fetchProducts,
   fetchProduct,
+  fetchProductById,
   addProduct,
   removeProduct,
 };

@@ -37,9 +37,29 @@ const removeVendor = async (query) => {
   }
 };
 
+const updateVendor = async (query) => {
+  try {
+    const vendor = await Vendor.updateOne(query);
+    return vendor;
+  } catch (err) {
+    throw Error(err.message);
+  }
+};
+
+const updateVendorById = async () => {
+  try {
+    const vendor = await Vendor.findByIdAndUpdate(query);
+    return vendor;
+  } catch (err) {
+    throw Error(err.message);
+  }
+};
+
 module.exports = {
   fetchVendor,
   createVendor,
   vendorById,
   removeVendor,
+  updateVendor,
+  updateVendorById,
 };

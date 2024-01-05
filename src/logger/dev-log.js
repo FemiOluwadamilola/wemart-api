@@ -1,5 +1,5 @@
-   const { createLogger, format, transports, config } = require("winston");
-const { combine, timestamp, json, errors,colorize } = format;
+const { createLogger, format, transports, config } = require("winston");
+const { combine, timestamp, json, errors } = format;
 
 const logLevels = {
   fatal: 0,
@@ -10,22 +10,54 @@ const logLevels = {
   trace: 5,
 };
 
-const developmentLog = () => {
-return createLogger({
-  levels: logLevels,
-  level: "debug",
-  format: combine(
-    colorize(),
-    errors({ stack: true }),
-    timestamp({
-      format: "YYYY-MM-DD hh:mm:ss:SSS A",
-    }),
-    json()
-  ),
-  transports: [
-    new transports.Console(),
-  ],
-})
-}
+const errorFilter = format((info, opts) => {
+  return info.level === "error" ? info : false;
+});
 
-module.exports = developmentLog
+const infoFilter = format((info, opts) => {
+  return info.level === "info" ? info : false;
+});
+
+const warnFilter = format((info, opts) => {
+  return info.level === "warn" ? info : false;
+});
+
+const fatalFilter = format((info, opts) => {
+  return info.level === "fatal" ? info : false;
+});
+
+const developmentLog = () => {
+  return createLogger({
+    levels: logLevels,
+    level: "debug",
+    format: combine(errors({ stack: true }), timestamp(), json()),
+    transports: [
+      new transports.Console(),
+      new transports.File({
+        filename: "./logs/combined.log",
+      }),
+      new transports.File({
+        filename: "./logs/error.log",
+        level: "error",
+        format: combine(errorFilter(), timestamp(), json()),
+      }),
+      new transports.File({
+        filename: "./logs/info.log",
+        level: "info",
+        format: combine(infoFilter(), timestamp(), json()),
+      }),
+      new transports.File({
+        filename: "./logs/warn.log",
+        level: "warn",
+        format: combine(warnFilter(), timestamp(), json()),
+      }),
+      new transports.File({
+        filename: "./logs/Fatal.log",
+        level: "fatal",
+        format: combine(fatalFilter(), timestamp(), json()),
+      }),
+    ],
+  });
+};
+
+module.exports = developmentLog;
